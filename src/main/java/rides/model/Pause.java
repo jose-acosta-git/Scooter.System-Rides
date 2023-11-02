@@ -2,6 +2,8 @@ package rides.model;
 
 import java.time.LocalTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -22,13 +24,13 @@ public class Pause {
 	@Column
 	private LocalTime endTime;
 	
+	@JsonIgnore
     @ManyToOne
     @JoinColumn(name = "ride_id")
     private Ride ride;
 	
-	public Pause(LocalTime startTime, LocalTime endTime, Ride ride) {
+	public Pause(LocalTime startTime, Ride ride) {
 		this.startTime = startTime;
-		this.endTime = endTime;
         this.ride = ride;
 	}
 	
@@ -39,7 +41,6 @@ public class Pause {
 	public LocalTime getEndTime() {return endTime;}
     public Ride getRide() {return ride;}
     
-    public void setRide(Ride ride) {
-        this.ride = ride;
-    }
+    public void setRide(Ride ride) {this.ride = ride;}
+    public void setEndTime(LocalTime endTime) {this.endTime = endTime;}
 }
