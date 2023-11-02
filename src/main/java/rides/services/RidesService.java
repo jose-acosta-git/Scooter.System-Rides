@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import rides.dtos.EndRideDto;
 import rides.dtos.PaymentDto;
 import rides.dtos.StartRideDto;
+import rides.model.Pause;
 import rides.model.Ride;
 import rides.repositories.RidesRepository;
 
@@ -53,17 +54,33 @@ public class RidesService {
 		LocalDateTime endTime = LocalDateTime.now();
 		Duration duration = Duration.between(ride.getStartTime(), endTime);
 		long seconds = duration.getSeconds();
-		String fare = getOk("http://localhost:9090/fares/currentStandardPrice");
-		if (fare == null) {
+		String standardPrice = getOk("http://localhost:9090/fares/currentStandardPrice");
+		String extendedPausePrice = getOk("http://localhost:9090/fares/currentExtendedPausePrice");
+		if (standardPrice == null || extendedPausePrice == null) {
 			return ResponseEntity.badRequest().build();
 		}
-		double fareValue = Double.valueOf(fare);
+		double totalPrice = 0;
+		double standardValue = Double.valueOf(standardPrice);
+		double extendedPauseValue = Double.valueOf(extendedPausePrice);
+		
+		for (Pause pause : ride.getPauses()) {
+			Duration pauseDuration = Duration.between(pause.getStartTime(), pause.getEndTime());
+			long pauseSeconds = pauseDuration.getSeconds();
+			if (pauseSeconds > 900) {
+				Duration extendedPriceDuration = Duration.between(ride.getEndTime(), pause.getEndTime());
+				long extendedPriceSeconds = extendedPriceDuration.getSeconds();
+				seconds -= extendedPriceSeconds;
+				totalPrice += extendedPriceSeconds * extendedPauseValue;
+			}
+		}
+		
+		totalPrice += seconds * standardValue;
 		
 		ride.setEndTime(endTime);
 		ride.setDistance(dto.getDistance());
-		ride.setPrice(fareValue * seconds);
+		ride.setPrice(totalPrice);
 		
-		boolean paidService = payService(ride.getAccountId(), fareValue * seconds);
+		boolean paidService = payService(ride.getAccountId(), totalPrice);
 		if (!paidService) {
 			return ResponseEntity.badRequest().build();
 		}
