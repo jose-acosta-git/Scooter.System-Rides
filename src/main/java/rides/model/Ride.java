@@ -25,12 +25,17 @@ public class Ride {
 	
 	@Column
 	private double price;
+	
+	@Column
+	private int accountId;
+	
+	@Column 
+	private int scooterId;
 
-	public Ride(LocalDateTime startTime, LocalDateTime endTime, double distance, double price) {
+	public Ride(LocalDateTime startTime, int accountId, int scooterId) {
 		this.startTime = startTime;
-		this.endTime = endTime;
-		this.distance = distance;
-		this.price = price;
+		this.accountId = accountId;
+		this.scooterId = scooterId;
 	}
 	
 	public Ride() {}
@@ -40,4 +45,10 @@ public class Ride {
 	public LocalDateTime getEndTime() {return endTime;}
 	public double getDistance() {return distance;}
 	public double getPrice() {return price;}
+	public int getAccountId() {return accountId;}
+	public int getScooterId() {return scooterId;}
+	
+	public void setEndTime(LocalDateTime endTime) {this.endTime = endTime;}
+	public void setDistance(double distance) {this.distance = distance;}
+	public void setPrice(double price) {this.price = price;}
 }
