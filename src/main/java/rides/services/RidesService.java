@@ -6,12 +6,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Optional;
 
-import org.apache.catalina.connector.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -50,40 +49,63 @@ public class RidesService {
 		if (!optionalRide.isPresent()) {
 			return ResponseEntity.notFound().build();
 		}
-		Ride ride = optionalRide.get();
-		LocalDateTime endTime = LocalDateTime.now();
-		Duration duration = Duration.between(ride.getStartTime(), endTime);
-		long seconds = duration.getSeconds();
-		String standardPrice = getOk("http://localhost:9090/fares/currentStandardPrice");
-		String extendedPausePrice = getOk("http://localhost:9090/fares/currentExtendedPausePrice");
-		if (standardPrice == null || extendedPausePrice == null) {
+		
+		//Obtengo las tarifas actuales
+		String standardPriceResponse = getOk("http://localhost:9090/fares/currentStandardPrice");
+		String extendedPausePriceResponse = getOk("http://localhost:9090/fares/currentExtendedPausePrice");
+		if (standardPriceResponse == null || extendedPausePriceResponse == null) {
 			return ResponseEntity.badRequest().build();
 		}
+
+		//Inicializo variables
+		Ride ride = optionalRide.get();
+		LocalDateTime endTime = LocalDateTime.now();
+		
+		//Calculo el precio del viaje
 		double totalPrice = 0;
-		double standardValue = Double.valueOf(standardPrice);
-		double extendedPauseValue = Double.valueOf(extendedPausePrice);
+		double standardPrice = Double.valueOf(standardPriceResponse);
+		double extendedPausePrice = Double.valueOf(extendedPausePriceResponse);
+		LocalTime higherRateStartTime = null;
 		
 		for (Pause pause : ride.getPauses()) {
 			Duration pauseDuration = Duration.between(pause.getStartTime(), pause.getEndTime());
 			long pauseSeconds = pauseDuration.getSeconds();
-			if (pauseSeconds > 900) {
-				Duration extendedPriceDuration = Duration.between(ride.getEndTime(), pause.getEndTime());
-				long extendedPriceSeconds = extendedPriceDuration.getSeconds();
-				seconds -= extendedPriceSeconds;
-				totalPrice += extendedPriceSeconds * extendedPauseValue;
+			
+			//cambiar a 900
+			if (pauseSeconds > 60) {
+				//cambiar a 15
+				LocalTime currentHigherRateStartTime = pause.getStartTime().plusMinutes(1);
+				if (higherRateStartTime == null) {
+					higherRateStartTime = currentHigherRateStartTime;
+				} else if (currentHigherRateStartTime.isBefore(higherRateStartTime)) {
+					higherRateStartTime = currentHigherRateStartTime;
+				}
 			}
 		}
 		
-		totalPrice += seconds * standardValue;
+		if (higherRateStartTime == null) {
+			Duration totalDuration = Duration.between(ride.getStartTime(), endTime);
+			totalPrice += totalDuration.getSeconds() * standardPrice;
+		} else {
+			Duration standardRateTime = Duration.between(ride.getStartTime().toLocalTime(), higherRateStartTime);
+			totalPrice += standardRateTime.getSeconds() * standardPrice;
+			Duration higherRateTime = Duration.between(higherRateStartTime, endTime);
+			totalPrice += higherRateTime.getSeconds() * extendedPausePrice;
+		}
+
 		
+		//Establezco los valores del viaje
 		ride.setEndTime(endTime);
 		ride.setDistance(dto.getDistance());
 		ride.setPrice(totalPrice);
 		
+		//Cobro el servicio
 		boolean paidService = payService(ride.getAccountId(), totalPrice);
 		if (!paidService) {
 			return ResponseEntity.badRequest().build();
 		}
+		
+		//Guardo los cambios
 		return ResponseEntity.ok(ridesRepository.save(ride));
 	}
 	
