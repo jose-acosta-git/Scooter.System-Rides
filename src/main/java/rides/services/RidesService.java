@@ -45,23 +45,24 @@ public class RidesService {
 	}
 	
 	public ResponseEntity<Ride> endRide(int rideId, EndRideDto dto) {
+		//Verifica que el viaje exista
 		Optional<Ride> optionalRide = ridesRepository.findById(rideId);
 		if (!optionalRide.isPresent()) {
 			return ResponseEntity.notFound().build();
 		}
 		
-		//Obtengo las tarifas actuales
+		//Obtiene las tarifas actuales
 		String standardPriceResponse = getOk("http://localhost:9090/fares/currentStandardPrice");
 		String extendedPausePriceResponse = getOk("http://localhost:9090/fares/currentExtendedPausePrice");
 		if (standardPriceResponse == null || extendedPausePriceResponse == null) {
 			return ResponseEntity.badRequest().build();
 		}
 
-		//Inicializo variables
+		//Inicializa variables
 		Ride ride = optionalRide.get();
 		LocalDateTime endTime = LocalDateTime.now();
 		
-		//Calculo el precio del viaje
+		//Calcula el precio del viaje
 		double totalPrice = 0;
 		double standardPrice = Double.valueOf(standardPriceResponse);
 		double extendedPausePrice = Double.valueOf(extendedPausePriceResponse);
@@ -71,10 +72,8 @@ public class RidesService {
 			Duration pauseDuration = Duration.between(pause.getStartTime(), pause.getEndTime());
 			long pauseSeconds = pauseDuration.getSeconds();
 			
-			//cambiar a 900
-			if (pauseSeconds > 60) {
-				//cambiar a 15
-				LocalTime currentHigherRateStartTime = pause.getStartTime().plusMinutes(1);
+			if (pauseSeconds > 900) {
+				LocalTime currentHigherRateStartTime = pause.getStartTime().plusMinutes(15);
 				if (higherRateStartTime == null) {
 					higherRateStartTime = currentHigherRateStartTime;
 				} else if (currentHigherRateStartTime.isBefore(higherRateStartTime)) {
@@ -94,18 +93,18 @@ public class RidesService {
 		}
 
 		
-		//Establezco los valores del viaje
+		//Establece los valores del viaje
 		ride.setEndTime(endTime);
 		ride.setDistance(dto.getDistance());
 		ride.setPrice(totalPrice);
 		
-		//Cobro el servicio
+		//Cobra el servicio
 		boolean paidService = payService(ride.getAccountId(), totalPrice);
 		if (!paidService) {
 			return ResponseEntity.badRequest().build();
 		}
 		
-		//Guardo los cambios
+		//Guarda los cambios
 		return ResponseEntity.ok(ridesRepository.save(ride));
 	}
 	
@@ -152,8 +151,6 @@ public class RidesService {
 	}
 	
 	private String convertToJson(PaymentDto dto) {
-        // Implement JSON serialization logic using your preferred library (e.g., Jackson, Gson)
-
         ObjectMapper objectMapper = new ObjectMapper();
          try {
              return objectMapper.writeValueAsString(dto);
