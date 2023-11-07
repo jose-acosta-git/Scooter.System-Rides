@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import rides.dtos.EndRideDto;
@@ -30,7 +30,6 @@ import rides.dtos.StartRideDto;
 import rides.model.Pause;
 import rides.model.Ride;
 import rides.repositories.RidesRepository;
-
 
 @Service
 public class RidesService {
@@ -46,6 +45,18 @@ public class RidesService {
 		if (accountResponse == null || scooterResponse == null) {
 			return ResponseEntity.badRequest().build();
 		}
+		
+		try {
+		    ObjectMapper objectMapper = new ObjectMapper();
+		    JsonNode jsonNode = objectMapper.readTree(accountResponse);
+		    boolean isActive = jsonNode.get("active").asBoolean();
+		    if (!isActive) {
+		    	return ResponseEntity.badRequest().build();
+		    }
+		} catch (Exception e) {
+		    return ResponseEntity.badRequest().build();
+		}
+		
 		return ResponseEntity.ok(ridesRepository.save(convertToEntity(dto)));
 
 	}
