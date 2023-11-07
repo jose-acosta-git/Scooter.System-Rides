@@ -50,6 +50,11 @@ public class RidesService {
 		if (!optionalRide.isPresent()) {
 			return ResponseEntity.notFound().build();
 		}
+		//Verifica que el viaje no haya finalizado
+		Ride ride = optionalRide.get();
+		if (ride.getEndTime() != null) {
+			return ResponseEntity.badRequest().build();
+		}
 		
 		//Obtiene las tarifas actuales
 		String standardPriceResponse = getOk("http://localhost:9090/fares/currentStandardPrice");
@@ -59,7 +64,6 @@ public class RidesService {
 		}
 
 		//Inicializa variables
-		Ride ride = optionalRide.get();
 		LocalDateTime endTime = LocalDateTime.now();
 		
 		//Calcula el precio del viaje
