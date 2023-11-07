@@ -175,8 +175,7 @@ public class RidesService {
 	    Map<Integer, Long> scooterTotalTimeMap = new HashMap<>();
 	    for (Ride ride : rides) {
 	    	Integer scooterId = ride.getScooterId();
-	    	Duration duration = Duration.between(ride.getStartTime(), ride.getEndTime());
-			long rideDurationInSeconds = duration.getSeconds();
+			long rideDurationInSeconds = calculateDurationInSeconds(ride.getStartTime().toLocalTime(), ride.getEndTime().toLocalTime());
 			long currentScooterTime = scooterTotalTimeMap.getOrDefault(scooterId, 0L);
 			scooterTotalTimeMap.put(ride.getScooterId(), rideDurationInSeconds + currentScooterTime);
 		}
@@ -186,5 +185,37 @@ public class RidesService {
 		}
 	    
 	    return ResponseEntity.ok(scootersDtos);
+	}
+
+	public ResponseEntity<List<ScooterWithTimeDto>> getScootersOrderedByTotalTimeWithoutPauses() {
+	    List<Ride> rides = ridesRepository.findAll();
+	    Map<Integer, Long> scooterTotalTimeMap = new HashMap<>();
+	    
+	    for (Ride ride : rides) {
+	    	Integer scooterId = ride.getScooterId();
+	    	long rideDurationInSeconds = calculateDurationInSeconds(ride.getStartTime().toLocalTime(), ride.getEndTime().toLocalTime());
+			long currentScooterTime = scooterTotalTimeMap.getOrDefault(scooterId, 0L);
+			
+			long totalPauseSeconds = 0;
+			for (Pause pause : ride.getPauses()) {
+				if (pause.getEndTime() != null) {
+					long pauseDurationInSeconds = calculateDurationInSeconds(pause.getStartTime(), pause.getEndTime());
+					totalPauseSeconds += pauseDurationInSeconds;
+				}
+			}
+			
+			scooterTotalTimeMap.put(ride.getScooterId(), currentScooterTime + rideDurationInSeconds - totalPauseSeconds);
+		}
+	    
+	    List<ScooterWithTimeDto> scootersDtos = new ArrayList<>();
+	    for (Map.Entry<Integer, Long> entry : scooterTotalTimeMap.entrySet()) {
+			scootersDtos.add(new ScooterWithTimeDto(entry.getKey(), entry.getValue()));
+		}
+	    return ResponseEntity.ok(scootersDtos);
+	}
+	
+	private long calculateDurationInSeconds(LocalTime startTime, LocalTime endTime) {
+		Duration duration = Duration.between(startTime, endTime);
+		return duration.getSeconds();
 	}
 }

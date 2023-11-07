@@ -51,9 +51,12 @@ public class RidesController {
         return ResponseEntity.ok(scooters);
     }
     
-    @GetMapping("/scootersOrderedByTotalTime")
-    public ResponseEntity<List<ScooterWithTimeDto>> getScootersOrderedByTotalTime() {
-        return ridesService.getScootersOrderedByTotalTime();
+    @GetMapping("/scootersOrderedByTotalTime/{includePauses}")
+    public ResponseEntity<List<ScooterWithTimeDto>> getScootersOrderedByTotalTime(@PathVariable boolean includePauses) {
+    	if (includePauses) {
+    		return ridesService.getScootersOrderedByTotalTime();
+    	}
+        return ridesService.getScootersOrderedByTotalTimeWithoutPauses();
     }
 
 }
