@@ -11,5 +11,5 @@ import rides.model.Ride;
 public interface RidesRepository extends JpaRepository<Ride, Integer> {
 
     @Query("SELECT NEW rides.dtos.ScooterWithDistanceDto(r.scooterId, SUM(r.distance)) FROM Ride r GROUP BY r.scooterId ORDER BY SUM(r.distance) DESC")
-    List<ScooterWithDistanceDto> findScootersOrderedByTotalDistance();
+    List<ScooterWithDistanceDto> getScootersOrderedByTotalDistance();
 }

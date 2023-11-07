@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import rides.dtos.EndRideDto;
 import rides.dtos.ScooterWithDistanceDto;
+import rides.dtos.ScooterWithTimeDto;
 import rides.dtos.StartRideDto;
 import rides.model.Ride;
 import rides.repositories.RidesRepository;
@@ -46,8 +47,13 @@ public class RidesController {
 	
     @GetMapping("/scootersOrderedByDistance")
     public ResponseEntity<List<ScooterWithDistanceDto>> getScootersOrderedByDistance() {
-        List<ScooterWithDistanceDto> scooterDistanceDTOs = ridesRepository.findScootersOrderedByTotalDistance();
-        return ResponseEntity.ok(scooterDistanceDTOs);
+        List<ScooterWithDistanceDto> scooters = ridesRepository.getScootersOrderedByTotalDistance();
+        return ResponseEntity.ok(scooters);
+    }
+    
+    @GetMapping("/scootersOrderedByTotalTime")
+    public ResponseEntity<List<ScooterWithTimeDto>> getScootersOrderedByTotalTime() {
+        return ridesService.getScootersOrderedByTotalTime();
     }
 
 }

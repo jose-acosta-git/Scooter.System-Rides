@@ -7,6 +7,11 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import rides.dtos.EndRideDto;
 import rides.dtos.PaymentDto;
+import rides.dtos.ScooterWithTimeDto;
 import rides.dtos.StartRideDto;
 import rides.model.Pause;
 import rides.model.Ride;
@@ -162,5 +168,23 @@ public class RidesService {
              e.printStackTrace();
          }
         return "";
+	}
+
+	public ResponseEntity<List<ScooterWithTimeDto>> getScootersOrderedByTotalTime() {
+	    List<Ride> rides = ridesRepository.findAll();
+	    Map<Integer, Long> scooterTotalTimeMap = new HashMap<>();
+	    for (Ride ride : rides) {
+	    	Integer scooterId = ride.getScooterId();
+	    	Duration duration = Duration.between(ride.getStartTime(), ride.getEndTime());
+			long rideDurationInSeconds = duration.getSeconds();
+			long currentScooterTime = scooterTotalTimeMap.getOrDefault(scooterId, 0L);
+			scooterTotalTimeMap.put(ride.getScooterId(), rideDurationInSeconds + currentScooterTime);
+		}
+	    List<ScooterWithTimeDto> scootersDtos = new ArrayList<>();
+	    for (Map.Entry<Integer, Long> entry : scooterTotalTimeMap.entrySet()) {
+			scootersDtos.add(new ScooterWithTimeDto(entry.getKey(), entry.getValue()));
+		}
+	    
+	    return ResponseEntity.ok(scootersDtos);
 	}
 }
