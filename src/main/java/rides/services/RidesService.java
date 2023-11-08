@@ -73,6 +73,11 @@ public class RidesService {
 			return ResponseEntity.badRequest().build();
 		}
 		
+		boolean scooterIsInAStop = checkScooterInStop(ride.getScooterId());
+		if (!scooterIsInAStop) {
+			return ResponseEntity.badRequest().build();
+		}
+		
 		//Obtiene las tarifas actuales
 		String standardPriceResponse = getOk("http://localhost:9090/fares/currentStandardPrice");
 		String extendedPausePriceResponse = getOk("http://localhost:9090/fares/currentExtendedPausePrice");
@@ -129,6 +134,12 @@ public class RidesService {
 		return ResponseEntity.ok(ridesRepository.save(ride));
 	}
 	
+	private boolean checkScooterInStop(int scooterId) {
+		String url = "http://localhost:8888/scooters/" + scooterId + "/currentStop";
+		String response = getOk(url);
+		return response != null;
+	}
+
 	private boolean payService(int accountId, double price) {
 		String url = "http://localhost:8081/accounts/" + accountId + "/payService";
 		String json = convertToJson(new PaymentDto(price));
