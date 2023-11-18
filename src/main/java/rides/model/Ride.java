@@ -31,7 +31,7 @@ public class Ride {
 	private double price;
 	
 	@Column
-	private int accountId;
+	private int userId;
 	
 	@Column 
 	private int scooterId;
@@ -39,9 +39,9 @@ public class Ride {
     @OneToMany(mappedBy = "ride", cascade = CascadeType.ALL)
     private List<Pause> pauses;
 
-	public Ride(LocalDateTime startTime, int accountId, int scooterId) {
+	public Ride(LocalDateTime startTime, int userId, int scooterId) {
 		this.startTime = startTime;
-		this.accountId = accountId;
+		this.userId = userId;
 		this.scooterId = scooterId;
 		this.pauses = new ArrayList<>();
 	}
@@ -53,7 +53,7 @@ public class Ride {
 	public LocalDateTime getEndTime() {return endTime;}
 	public double getDistance() {return distance;}
 	public double getPrice() {return price;}
-	public int getAccountId() {return accountId;}
+	public int getUserId() {return userId;}
 	public int getScooterId() {return scooterId;}
     public List<Pause> getPauses() {return pauses;}
 	

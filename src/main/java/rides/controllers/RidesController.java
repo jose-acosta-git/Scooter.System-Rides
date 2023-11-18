@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import rides.dtos.EndRideDto;
 import rides.dtos.ScooterWithDistanceDto;
 import rides.dtos.ScooterWithTimeDto;
@@ -31,14 +32,14 @@ public class RidesController {
 	RidesService ridesService;
 	
 	@PostMapping
-	public ResponseEntity<Ride> startRide(@RequestBody StartRideDto dto) {
-		return ridesService.startRide(dto);
+	public ResponseEntity<Ride> startRide(HttpServletRequest request, @RequestBody StartRideDto dto) {
+		return ridesService.startRide(request, dto);
 	}
 	
-	@PatchMapping("/{rideId}/end")
-	public ResponseEntity<Ride> endRide(@PathVariable int rideId, @RequestBody EndRideDto dto) {
-		return ridesService.endRide(rideId, dto);
-	}
+	// @PatchMapping("/{rideId}/end")
+	// public ResponseEntity<Ride> endRide(@PathVariable int rideId, @RequestBody EndRideDto dto) {
+	// 	return ridesService.endRide(rideId, dto);
+	// }
 	
 	@GetMapping
 	public List<Ride> findAll() {

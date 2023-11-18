@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -23,12 +24,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.servlet.http.HttpServletRequest;
 import rides.dtos.EndRideDto;
 import rides.dtos.PaymentDto;
 import rides.dtos.ScooterWithTimeDto;
 import rides.dtos.StartRideDto;
 import rides.model.Pause;
 import rides.model.Ride;
+import rides.model.User;
 import rides.repositories.RidesRepository;
 
 @Service
@@ -36,31 +39,41 @@ public class RidesService {
 	
 	@Autowired
 	private RidesRepository ridesRepository;
+	@Autowired
+	private AuthService authService;
 	
 	private HttpClient client = HttpClient.newHttpClient();
 
-	public ResponseEntity<Ride> startRide(StartRideDto dto) {
-		String accountResponse = getOk("http://localhost:8081/accounts/" + dto.getAccountId());
-		String scooterResponse = getOk("http://localhost:8888/scooters/" + dto.getScooterId());
-		if (accountResponse == null || scooterResponse == null) {
+	public ResponseEntity<Ride> startRide(HttpServletRequest request, StartRideDto dto) {
+		String token = authService.getTokenFromRequest(request);
+		if (token == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		User user = authService.getUserFromToken(token);
+		if (user == null) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		if (!authService.canStartRide(token)) {
 			return ResponseEntity.badRequest().build();
 		}
-		
-		try {
-		    ObjectMapper objectMapper = new ObjectMapper();
-		    JsonNode jsonNode = objectMapper.readTree(accountResponse);
-		    boolean isActive = jsonNode.get("active").asBoolean();
-		    if (!isActive) {
-		    	return ResponseEntity.badRequest().build();
-		    }
-		} catch (Exception e) {
-		    return ResponseEntity.badRequest().build();
-		}
-		
-		return ResponseEntity.ok(ridesRepository.save(convertToEntity(dto)));
 
+		String url = "http://localhost:8888/scooters/" + dto.getScooterId() + "/currentStop";
+        HttpRequest scooterRequest = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Authorization", "Bearer " + token)
+            .build();
+
+		try {
+			HttpResponse<String> response = client.send(scooterRequest, HttpResponse.BodyHandlers.ofString());
+			if (response.statusCode() == 200 && response.body() != null && !response.body().isEmpty()) {
+				return ResponseEntity.ok(ridesRepository.save(convertToEntity(dto, user.getId())));
+			}
+			return ResponseEntity.badRequest().build();
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().build();
+		}
 	}
-	
+	/* 
 	public ResponseEntity<Ride> endRide(int rideId, EndRideDto dto) {
 		//Verifica que el viaje exista
 		Optional<Ride> optionalRide = ridesRepository.findById(rideId);
@@ -133,6 +146,7 @@ public class RidesService {
 		//Guarda los cambios
 		return ResponseEntity.ok(ridesRepository.save(ride));
 	}
+	*/
 	
 	private boolean checkScooterInStop(int scooterId) {
 		String url = "http://localhost:8888/scooters/" + scooterId + "/currentStop";
@@ -178,8 +192,8 @@ public class RidesService {
         }
 	}
 	
-	private Ride convertToEntity(StartRideDto dto) {
-		return new Ride(LocalDateTime.now(), dto.getAccountId(), dto.getScooterId());
+	private Ride convertToEntity(StartRideDto dto, int userId) {
+		return new Ride(LocalDateTime.now(), userId, dto.getScooterId());
 	}
 	
 	private String convertToJson(PaymentDto dto) {
