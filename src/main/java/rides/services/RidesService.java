@@ -280,4 +280,17 @@ public class RidesService {
 		Duration duration = Duration.between(startTime, endTime);
 		return duration.getSeconds();
 	}
+
+
+    public ResponseEntity<List<Ride>> findAll(HttpServletRequest request) {
+		String token = authService.getTokenFromRequest(request);
+		if (token == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		String role = authService.getRoleFromToken(token);
+		if (role != null && role.equals("ADMIN")) {
+			return ResponseEntity.ok(ridesRepository.findAll());
+		}
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
 }

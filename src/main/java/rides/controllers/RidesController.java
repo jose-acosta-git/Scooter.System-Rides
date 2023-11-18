@@ -42,8 +42,8 @@ public class RidesController {
 	}
 	
 	@GetMapping
-	public List<Ride> findAll() {
-		return ridesRepository.findAll();
+	public ResponseEntity<List<Ride>> findAll(HttpServletRequest request) {
+		return ridesService.findAll(request);
 	}
 	
     @GetMapping("/scootersOrderedByDistance")

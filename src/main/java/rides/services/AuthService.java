@@ -68,5 +68,23 @@ public class AuthService {
             return false;
         }
     }
+
+    public String getRoleFromToken(String token) {
+        String url = "http://localhost:8081/users/getRole";
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Authorization", "Bearer " + token)
+            .build();
+        
+        try {
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                return response.body();
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
     
 }
