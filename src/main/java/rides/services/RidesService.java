@@ -21,7 +21,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -58,21 +57,11 @@ public class RidesService {
 			return ResponseEntity.badRequest().build();
 		}
 
-		String url = "http://localhost:8888/scooters/" + dto.getScooterId() + "/currentStop";
-        HttpRequest scooterRequest = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .header("Authorization", "Bearer " + token)
-            .build();
-
-		try {
-			HttpResponse<String> response = client.send(scooterRequest, HttpResponse.BodyHandlers.ofString());
-			if (response.statusCode() == 200 && response.body() != null && !response.body().isEmpty()) {
-				return ResponseEntity.ok(ridesRepository.save(convertToEntity(dto, user.getId())));
-			}
-			return ResponseEntity.badRequest().build();
-		} catch (Exception e) {
-			return ResponseEntity.badRequest().build();
+		String currentStopResponse = httpGet("http://localhost:8888/scooters/" + dto.getScooterId() + "/currentStop", token);
+		if (currentStopResponse != null && !currentStopResponse.isEmpty()) {
+			return ResponseEntity.ok(ridesRepository.save(convertToEntity(dto, user.getId())));
 		}
+		return ResponseEntity.badRequest().build();
 	}
 	
 
@@ -108,8 +97,8 @@ public class RidesService {
 		}
 		
 		//Obtiene las tarifas actuales
-		String standardPriceResponse = getOk("http://localhost:9090/fares/currentStandardPrice", token);
-		String extendedPausePriceResponse = getOk("http://localhost:9090/fares/currentExtendedPausePrice", token);
+		String standardPriceResponse = httpGet("http://localhost:9090/fares/currentStandardPrice", token);
+		String extendedPausePriceResponse = httpGet("http://localhost:9090/fares/currentExtendedPausePrice", token);
 		if (standardPriceResponse == null || extendedPausePriceResponse == null) {
 			return ResponseEntity.badRequest().build();
 		}
@@ -164,21 +153,11 @@ public class RidesService {
 	}
 	
 	private boolean scooterIsInStop(int scooterId, String token)  {
-		String url = "http://localhost:8888/scooters/" + scooterId + "/currentStop";
-        HttpRequest scooterRequest = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .header("Authorization", "Bearer " + token)
-            .build();
-		
-		try {
-			HttpResponse<String> response = client.send(scooterRequest, HttpResponse.BodyHandlers.ofString());
-			if (response.statusCode() == 200 && response.body() != null && !response.body().isEmpty()) {
-				return true;
-			}
-			return false;
-		} catch (Exception e) {
-			return false;
+		String currentStopResponse = httpGet("http://localhost:8888/scooters/" + scooterId + "/currentStop", token);
+		if (currentStopResponse != null && !currentStopResponse.isEmpty()) {
+			return true;
 		}
+		return false;
 	}
 
 	private boolean payService(double price, String token) {
@@ -201,22 +180,6 @@ public class RidesService {
             return false;
         }
 		return false;
-	}
-	
-	private String getOk(String url, String token) { 
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .header("Authorization", "Bearer " + token)
-            .build();
-        try {
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() == 200) {
-                return response.body();
-            }
-            return null;
-        } catch (Exception e) {
-            return null;
-        }
 	}
 	
 	private Ride convertToEntity(StartRideDto dto, int userId) {
@@ -326,4 +289,21 @@ public class RidesService {
 		}
 		return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
+
+	public String httpGet(String url, String token) {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Authorization", "Bearer " + token)
+            .build();
+
+		try {
+			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+			if (response.statusCode() == 200) {
+				return response.body();
+			}
+			return null;
+		} catch (Exception e) {
+			return null;
+		}
+	}
 }

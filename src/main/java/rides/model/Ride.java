@@ -60,8 +60,4 @@ public class Ride {
 	public void setEndTime(LocalDateTime endTime) {this.endTime = endTime;}
 	public void setDistance(double distance) {this.distance = distance;}
 	public void setPrice(double price) {this.price = price;}
-//    public void addPause(Pause pause) {
-//        pauses.add(pause);
-//        pause.setRide(this);
-//    }
 }

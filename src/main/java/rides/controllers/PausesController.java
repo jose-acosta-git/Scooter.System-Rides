@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 import rides.dtos.StartPauseDto;
 import rides.model.Pause;
-import rides.repositories.PausesRepository;
 import rides.services.PausesService;
 
 @RestController

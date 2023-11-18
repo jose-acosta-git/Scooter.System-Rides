@@ -6,12 +6,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -85,6 +82,5 @@ public class AuthService {
         } catch (Exception e) {
             return null;
         }
-    }
-    
+    }   
 }

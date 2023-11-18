@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import jakarta.servlet.http.HttpServletRequest;
-import rides.dtos.ScooterWithDistanceDto;
 import rides.dtos.StartPauseDto;
 import rides.model.Pause;
 import rides.model.Ride;

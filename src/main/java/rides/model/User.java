@@ -21,12 +21,8 @@ public class User {
         this.accounts = accounts;
     }
 
-    
-
     public User() {
     }
-
-
 
     public int getId() {
         return id;
@@ -82,7 +78,5 @@ public class User {
 
     public void setAccounts(List<Account> accounts) {
         this.accounts = accounts;
-    }
-
-        
+    }       
 }

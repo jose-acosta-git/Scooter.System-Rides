@@ -58,5 +58,4 @@ public class RidesController {
     	}
         return ridesService.getScootersOrderedByTotalTimeWithoutPauses(request);
     }
-
 }
