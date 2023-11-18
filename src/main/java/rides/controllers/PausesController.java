@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import rides.dtos.StartPauseDto;
 import rides.model.Pause;
 import rides.repositories.PausesRepository;
@@ -23,21 +24,19 @@ public class PausesController {
 	
 	@Autowired
 	private PausesService pausesService;
-	@Autowired
-	private PausesRepository pausesRepository;
 	
 	@PostMapping
-	public ResponseEntity<Pause> startPause(@RequestBody StartPauseDto dto) {
-		return pausesService.startPause(dto);
+	public ResponseEntity<Pause> startPause(HttpServletRequest request, @RequestBody StartPauseDto dto) {
+		return pausesService.startPause(request, dto);
 	}
 
 	@PatchMapping("{pauseId}/end")
-	public ResponseEntity<Pause> endPause(@PathVariable int pauseId) {
-		return pausesService.endPause(pauseId);
+	public ResponseEntity<Pause> endPause(HttpServletRequest request, @PathVariable int pauseId) {
+		return pausesService.endPause(request, pauseId);
 	}
 	
 	@GetMapping
-	public List<Pause> findAll() {
-		return pausesRepository.findAll();
+	public ResponseEntity<List<Pause>> findAll(HttpServletRequest request) {
+		return pausesService.findAll(request);
 	}
 }
