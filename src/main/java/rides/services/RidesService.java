@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import rides.dtos.EndRideDto;
 import rides.dtos.PaymentDto;
+import rides.dtos.ScooterWithDistanceDto;
 import rides.dtos.ScooterWithTimeDto;
 import rides.dtos.StartRideDto;
 import rides.model.Pause;
@@ -232,7 +233,16 @@ public class RidesService {
         return "";
 	}
 
-	public ResponseEntity<List<ScooterWithTimeDto>> getScootersOrderedByTotalTime() {
+	public ResponseEntity<List<ScooterWithTimeDto>> getScootersOrderedByTotalTime(HttpServletRequest request) {
+		String token = authService.getTokenFromRequest(request);
+		if (token == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		String role = authService.getRoleFromToken(token);
+		if (role == null || (role != null && role.equals("USER"))) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
 	    List<Ride> rides = ridesRepository.findAll();
 	    Map<Integer, Long> scooterTotalTimeMap = new HashMap<>();
 	    for (Ride ride : rides) {
@@ -249,7 +259,16 @@ public class RidesService {
 	    return ResponseEntity.ok(scootersDtos);
 	}
 
-	public ResponseEntity<List<ScooterWithTimeDto>> getScootersOrderedByTotalTimeWithoutPauses() {
+	public ResponseEntity<List<ScooterWithTimeDto>> getScootersOrderedByTotalTimeWithoutPauses(HttpServletRequest request) {
+		String token = authService.getTokenFromRequest(request);
+		if (token == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		String role = authService.getRoleFromToken(token);
+		if (role == null || (role != null && role.equals("USER"))) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
 	    List<Ride> rides = ridesRepository.findAll();
 	    Map<Integer, Long> scooterTotalTimeMap = new HashMap<>();
 	    
@@ -288,8 +307,22 @@ public class RidesService {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 		}
 		String role = authService.getRoleFromToken(token);
-		if (role != null && role.equals("ADMIN")) {
+		if (role != null && (role.equals("ADMIN") || role.equals("MAINTENANCE"))) {
 			return ResponseEntity.ok(ridesRepository.findAll());
+		}
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
+
+
+    public ResponseEntity<List<ScooterWithDistanceDto>> getScootersOrderedByTotalDistance(HttpServletRequest request) {
+		String token = authService.getTokenFromRequest(request);
+		if (token == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		String role = authService.getRoleFromToken(token);
+		if (role != null && (role.equals("ADMIN") || role.equals("MAINTENANCE"))) {
+			List<ScooterWithDistanceDto> scooters = ridesRepository.getScootersOrderedByTotalDistance();
+			return ResponseEntity.ok(scooters);
 		}
 		return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }

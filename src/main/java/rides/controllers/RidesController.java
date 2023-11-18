@@ -47,17 +47,16 @@ public class RidesController {
 	}
 	
     @GetMapping("/scootersOrderedByDistance")
-    public ResponseEntity<List<ScooterWithDistanceDto>> getScootersOrderedByDistance() {
-        List<ScooterWithDistanceDto> scooters = ridesRepository.getScootersOrderedByTotalDistance();
-        return ResponseEntity.ok(scooters);
+    public ResponseEntity<List<ScooterWithDistanceDto>> getScootersOrderedByDistance(HttpServletRequest request) {
+		return ridesService.getScootersOrderedByTotalDistance(request);
     }
     
     @GetMapping("/scootersOrderedByTotalTime/{includePauses}")
-    public ResponseEntity<List<ScooterWithTimeDto>> getScootersOrderedByTotalTime(@PathVariable boolean includePauses) {
+    public ResponseEntity<List<ScooterWithTimeDto>> getScootersOrderedByTotalTime(HttpServletRequest request, @PathVariable boolean includePauses) {
     	if (includePauses) {
-    		return ridesService.getScootersOrderedByTotalTime();
+    		return ridesService.getScootersOrderedByTotalTime(request);
     	}
-        return ridesService.getScootersOrderedByTotalTimeWithoutPauses();
+        return ridesService.getScootersOrderedByTotalTimeWithoutPauses(request);
     }
 
 }
