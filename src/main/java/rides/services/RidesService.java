@@ -51,7 +51,7 @@ public class RidesService {
 		}
 		User user = authService.getUserFromToken(token);
 		if (user == null) {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 		}
 		if (!authService.canStartRide(token)) {
 			return ResponseEntity.badRequest().build();
@@ -73,27 +73,42 @@ public class RidesService {
 			return ResponseEntity.badRequest().build();
 		}
 	}
-	/* 
-	public ResponseEntity<Ride> endRide(int rideId, EndRideDto dto) {
+	
+
+	public ResponseEntity<Ride> endRide(HttpServletRequest request, int rideId, EndRideDto dto) {
+		String token = authService.getTokenFromRequest(request);
+		if (token == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		User user = authService.getUserFromToken(token);
+		if (user == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+
+
 		//Verifica que el viaje exista
 		Optional<Ride> optionalRide = ridesRepository.findById(rideId);
 		if (!optionalRide.isPresent()) {
 			return ResponseEntity.notFound().build();
 		}
-		//Verifica que el viaje no haya finalizado
 		Ride ride = optionalRide.get();
+		//Verifica que el viaje pertenezca al usuario autenticado
+		if (ride.getUserId() != user.getId()) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+		//Verifica que el viaje no haya finalizado
 		if (ride.getEndTime() != null) {
 			return ResponseEntity.badRequest().build();
 		}
 		
-		boolean scooterIsInAStop = checkScooterInStop(ride.getScooterId());
+		boolean scooterIsInAStop = scooterIsInStop(ride.getScooterId(), token);
 		if (!scooterIsInAStop) {
 			return ResponseEntity.badRequest().build();
 		}
 		
 		//Obtiene las tarifas actuales
-		String standardPriceResponse = getOk("http://localhost:9090/fares/currentStandardPrice");
-		String extendedPausePriceResponse = getOk("http://localhost:9090/fares/currentExtendedPausePrice");
+		String standardPriceResponse = getOk("http://localhost:9090/fares/currentStandardPrice", token);
+		String extendedPausePriceResponse = getOk("http://localhost:9090/fares/currentExtendedPausePrice", token);
 		if (standardPriceResponse == null || extendedPausePriceResponse == null) {
 			return ResponseEntity.badRequest().build();
 		}
@@ -138,7 +153,7 @@ public class RidesService {
 		ride.setPrice(totalPrice);
 		
 		//Cobra el servicio
-		boolean paidService = payService(ride.getAccountId(), totalPrice);
+		boolean paidService = payService(totalPrice, token);
 		if (!paidService) {
 			return ResponseEntity.badRequest().build();
 		}
@@ -146,28 +161,38 @@ public class RidesService {
 		//Guarda los cambios
 		return ResponseEntity.ok(ridesRepository.save(ride));
 	}
-	*/
 	
-	private boolean checkScooterInStop(int scooterId) {
+	private boolean scooterIsInStop(int scooterId, String token)  {
 		String url = "http://localhost:8888/scooters/" + scooterId + "/currentStop";
-		String response = getOk(url);
-		return response != null;
+        HttpRequest scooterRequest = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Authorization", "Bearer " + token)
+            .build();
+		
+		try {
+			HttpResponse<String> response = client.send(scooterRequest, HttpResponse.BodyHandlers.ofString());
+			if (response.statusCode() == 200 && response.body() != null && !response.body().isEmpty()) {
+				return true;
+			}
+			return false;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
-	private boolean payService(int accountId, double price) {
-		String url = "http://localhost:8081/accounts/" + accountId + "/payService";
+	private boolean payService(double price, String token) {
+		String url = "http://localhost:8081/users/payService";
 		String json = convertToJson(new PaymentDto(price));
 		
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
+				.header("Authorization", "Bearer " + token)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .method("PATCH", HttpRequest.BodyPublishers.ofString(json))
+                .method("POST", HttpRequest.BodyPublishers.ofString(json))
                 .build();
         
-		HttpClient httpClient = HttpClient.newHttpClient();
-		
 		try {
-		    HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+		    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 		    if (response.statusCode() == 200) {
 		    	return true;
 		    }
@@ -177,10 +202,11 @@ public class RidesService {
 		return false;
 	}
 	
-	private String getOk(String url) { 
-		HttpRequest request = HttpRequest.newBuilder()
-				.uri(URI.create(url))
-				.build();
+	private String getOk(String url, String token) { 
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Authorization", "Bearer " + token)
+            .build();
         try {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {

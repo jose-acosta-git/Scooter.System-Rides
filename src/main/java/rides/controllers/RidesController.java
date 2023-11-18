@@ -36,10 +36,10 @@ public class RidesController {
 		return ridesService.startRide(request, dto);
 	}
 	
-	// @PatchMapping("/{rideId}/end")
-	// public ResponseEntity<Ride> endRide(@PathVariable int rideId, @RequestBody EndRideDto dto) {
-	// 	return ridesService.endRide(rideId, dto);
-	// }
+	@PatchMapping("/{rideId}/end")
+	public ResponseEntity<Ride> endRide(HttpServletRequest request, @PathVariable int rideId, @RequestBody EndRideDto dto) {
+		return ridesService.endRide(request, rideId, dto);
+	}
 	
 	@GetMapping
 	public List<Ride> findAll() {
